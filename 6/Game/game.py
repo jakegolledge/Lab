@@ -1,9 +1,11 @@
 #!/usr/bin/python3
-
+import time
 from map import rooms
 from player import *
 from items import *
 from gameparser import *
+
+current_mass = 6
 
 
 def list_of_items(items):
@@ -193,6 +195,7 @@ def print_menu(exits, room_items, inv_items):
     What do you want to do?
 
     """
+    print("Current mass: " + str(current_mass))
     print("You can:")
     # Iterate over available exits
     for direction in exits:
@@ -261,12 +264,17 @@ def execute_take(item_id):
     "You cannot take that."
     """
     global inventory
-
+    for i in current_room["items"]:
+    		item_mass =  i["mass"]
     for i in current_room["items"]:
     	if i["id"] == item_id:
-    		inventory.append(i)
-    		current_room["items"].remove(i)
-    		return
+    		if check_mass_take(i) == True:
+    			inventory.append(i)
+    			current_room["items"].remove(i)
+    			return
+    		elif check_mass_take(i) == False:
+    			print("This item is too heavy to take, maximum player mass is 8, " + item_id + " mass is " + str(item_mass))
+    			return
     print("You cannot take that.")
     		#break
     #for i in item_id:
@@ -283,6 +291,18 @@ def execute_take(item_id):
     	print("You cannot take that.")
     """
 
+def check_mass_take(item):
+	"""takes dict of an item and checks the players mass to see if they are able to 
+	pick up item 
+	"""
+	global current_mass 
+	item_mass = int(item["mass"])
+	if item_mass + current_mass <= 8:
+		current_mass += item_mass
+		return True
+	else:
+		return False
+
 def execute_drop(item_id):
     """This function takes an item_id as an argument and moves this item from the
     player's inventory to list of items in the current room. However, if there is
@@ -290,14 +310,19 @@ def execute_drop(item_id):
     """
     for i in inventory:
     	if i["id"] == item_id:
-    		#check_mass(i)
-    		current_room["items"].append(i)
-    		inventory.remove(i)
-    		return
-    #	elif item_id not in inventory:
-    #			
-    #			break
+    			current_room["items"].append(i)
+    			inventory.remove(i)
+    			current_mass = check_mass_drop(i)
+    			return			
+
     print("You cannot drop that.")
+
+def check_mass_drop(item):
+	global current_mass
+	item_mass = int(item["mass"])
+	current_mass -= item_mass
+	return current_mass
+
 
 def execute_command(command):
     """This function takes a command (a list of words as returned by
@@ -333,12 +358,6 @@ def execute_command(command):
     else:
         print("This makes no sense.")
 
-
-def check_mass(item):
-	"""takes dict of an item and checks the players mass to see if they are able to 
-	pick up item 
-	"""
-	print(item)
 
 def menu(exits, room_items, inv_items):
     """This function, given a dictionary of possible exits from a room, and a list
@@ -377,6 +396,9 @@ def move(exits, direction):
     # Next room to go to
     return rooms[exits[direction]]
 
+def check_win(room):
+	if item_biscuits in room["items"]:
+		return True
 
 # This is the entry point of our program
 def main():
@@ -394,6 +416,11 @@ def main():
         
         # Execute the player's command
         execute_command(command)
+
+        if check_win(rooms["Parking"]) == True:
+        	print("Congratulations, you win!")
+        	time.sleep(3)
+        	break
         #current_room = rooms[execute_go(command)]
     
 
